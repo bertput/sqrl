@@ -17,7 +17,7 @@ BINDIR  = $(HOMEDIR)/bin
 
 # DEBUG     = -ggdb
 CFLAGS    = -c $(GTK_CFLAGS) $(LIBSQRL_CFLAGS) -pthread -Wall $(DEBUG)
-LINKLIBS  = $(GTK_LIBS) $(LIBSQRL_LIBS) -pthread  -lssl -lcrypto
+LINKLIBS  = $(GTK_LIBS) $(LIBSQRL_LIBS) -pthread  -lssl -lcrypto -luriparser
 
 # SQLITEDIR = $(HOME)/projects/sqlite
 # SQLITELIB = $(SQLITEDIR)/libsqlite.a
@@ -27,15 +27,18 @@ LINKLIBS  = $(GTK_LIBS) $(LIBSQRL_LIBS) -pthread  -lssl -lcrypto
 HFILES   = \
 	log.h \
 	settings.h \
+	uriparse.h \
 	client.h
 CPPFILES = \
 	log.c \
 	settings.c \
+	uriparse.c \
 	client.c \
 	main.c
 OBJFILES = \
 	log.o \
 	settings.o \
+	uriparse.o \
 	client.o \
 	main.o
 TARGETS  = sqrl

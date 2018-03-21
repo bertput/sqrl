@@ -4,14 +4,17 @@
 
 #include "log.h"
 #include "client.h"
+#include "uriparse.h"
 
 static gboolean say_hi_flag = FALSE;
+static gboolean test_uri_flag = FALSE;
 static char *loglevel_str;
 
 
 static GOptionEntry entries[] =
 {
   { "hello", 'h', 0, G_OPTION_ARG_NONE, &say_hi_flag, "Just Says Hi", NULL },
+  { "testUri", 't', 0, G_OPTION_ARG_NONE, &test_uri_flag, "Test and print URI details", NULL },
   { "loglevels", 'l', 0, G_OPTION_ARG_STRING, &loglevel_str, "Sets Logging Level", "NONE" },
   { NULL }
 };
@@ -84,7 +87,19 @@ int main (int argc, char *argv[])
   if (argc > 1)
   {
     printf(" Argument 1 is %s\n", argv[1]);
-    client_authenticate(argv[1]);
+    if (test_uri_flag)
+    {
+      UriUriA *uri = uriparse_parse_uri(argv[1]);
+
+      log_info("    host: %s\n", uriparse_get_host(uri));
+      log_info("    path: %s\n", uriparse_get_path(uri));
+      log_info("   query: %s\n", uriparse_get_query(uri));
+      log_info("  scheme: %s\n", uriparse_get_scheme(uri));
+    }
+    else
+    {
+      client_authenticate(argv[1]);
+    }
   }
 
   // From this point forward, we need X running.

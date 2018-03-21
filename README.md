@@ -14,9 +14,12 @@ Before you take these steps, you will need to verify the location of your `libsq
 
 ## Prerequisites
 
-SQRL depends on `libsqrl` and `libsodium`.
+SQRL depends on `libsqrl`, `libsodium`, and `liburiparser`.
+
 Grab the sources for `libsqrl` from github and build it.
 When you do that, `libsqrl` will retrieve the correct version of `libsodium` as part of the build process and you will then have a nice shiny new `libsqrl` to link to.
+
+You should be able to get `liburiparser` from your linux repos.  You will probably need to get the `-dev` version of the package if it is available on your distro.
 
 ## Connecting your browser to SQRL
 
