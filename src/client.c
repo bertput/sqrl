@@ -346,12 +346,12 @@ void client_onSend(
   log_info( "Dest URL: %s\n", url );
   log_info( "Payload : %s\n", payload );
 
-  UriUriA *uri = uriparse_parse_uri(url);
+  uri *uri = uriparse_parse_uri(url);
 
-  log_info("    host: %s\n", uriparse_get_host(uri));
-  log_info("    path: %s\n", uriparse_get_path(uri));
-  log_info("   query: %s\n", uriparse_get_query(uri));
-  log_info("  scheme: %s\n", uriparse_get_scheme(uri));
+  log_info("    host: %s\n", uri->host);
+  log_info("    path: %s\n", uri->path);
+  log_info("   query: %s\n", uri->query);
+  log_info("  scheme: %s\n", uri->scheme);
 //  log_info("     url: %s\n", uri->url);
 
   /*
@@ -366,7 +366,7 @@ void client_onSend(
   if (sockfd < 0) error("ERROR opening socket");
 
   /* lookup the ip address */
-  server = gethostbyname(uriparse_get_host(uri));
+  server = gethostbyname(uri->host);
 
   if (server == NULL) error("ERROR, no such host");
 
@@ -383,7 +383,7 @@ void client_onSend(
   }
   else
   {
-    log_info("Successfully connected to %s\n", uriparse_get_host(uri));
+    log_info("Successfully connected to %s\n", uri->host);
   }
 
   /*
@@ -406,19 +406,19 @@ void client_onSend(
   log_info("Connecting using ssl object at %p\n", ssl);
   int ssl_connect_rc =  SSL_connect(ssl);
   if ( ssl_connect_rc == 1 )
-    log_info("Successfully enabled SSL/TLS session to: %s.\n", uriparse_get_host(uri));
+    log_info("Successfully enabled SSL/TLS session to: %s.\n", uri->host);
   else
   {
-    log_fatal("Error %d: Could not build a SSL session to: %s.\n", ssl_connect_rc, uriparse_get_host(uri));
+    log_fatal("Error %d: Could not build a SSL session to: %s.\n", ssl_connect_rc, uri->host);
     error("ssl_connect");
   }
 
   GString *message_gstr = g_string_new("");
-  g_string_append_printf(message_gstr, "POST /%s?%s HTTP/1.0\r\n", uriparse_get_path(uri), uriparse_get_query(uri));
-  g_string_append_printf(message_gstr, "Host: %s\r\n", uriparse_get_host(uri));
+  g_string_append_printf(message_gstr, "POST /%s?%s HTTP/1.0\r\n", uri->path, uri->query);
+  g_string_append_printf(message_gstr, "Host: %s\r\n", uri->host);
   g_string_append_printf(message_gstr, "User-Agent: SQRL/1\r\n");
   g_string_append_printf(message_gstr, "Content-type: application/x-www-form-urlencoded\r\n");
-  g_string_append_printf(message_gstr, "Content-Length: %d\r\n", payload_len);
+  g_string_append_printf(message_gstr, "Content-Length: %ld\r\n", payload_len);
   g_string_append_printf(message_gstr, "\r\n");
   g_string_append_printf(message_gstr, "%s", payload);
 
@@ -486,6 +486,8 @@ void client_onSend(
 
   /* close the socket */
   close(sockfd);
+
+  uriparse_free_uri(uri);
 
   /* process response */
   log_info("Response:\n%s\n",response_gstr->str);

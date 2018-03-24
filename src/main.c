@@ -89,12 +89,12 @@ int main (int argc, char *argv[])
     printf(" Argument 1 is %s\n", argv[1]);
     if (test_uri_flag)
     {
-      UriUriA *uri = uriparse_parse_uri(argv[1]);
+      uri *uri = uriparse_parse_uri(argv[1]);
 
-      log_info("    host: %s\n", uriparse_get_host(uri));
-      log_info("    path: %s\n", uriparse_get_path(uri));
-      log_info("   query: %s\n", uriparse_get_query(uri));
-      log_info("  scheme: %s\n", uriparse_get_scheme(uri));
+      log_info("    host: %s\n", uri->host);
+      log_info("    path: %s\n", uri->path);
+      log_info("   query: %s\n", uri->query);
+      log_info("  scheme: %s\n", uri->scheme);
     }
     else
     {

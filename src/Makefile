@@ -15,6 +15,8 @@ DOCDIR  = $(HOMEDIR)/doc/generated
 SRCDIR  = $(HOMEDIR)/src
 BINDIR  = $(HOMEDIR)/bin
 
+INSTALLDIR = $(HOME)/bin
+
 # DEBUG     = -ggdb
 CFLAGS    = -c $(GTK_CFLAGS) $(LIBSQRL_CFLAGS) -pthread -Wall $(DEBUG)
 LINKLIBS  = $(GTK_LIBS) $(LIBSQRL_LIBS) -pthread  -lssl -lcrypto -luriparser
@@ -74,6 +76,9 @@ tags : $(HFILES) $(CPPFILES)
 doc :
 	rm -rf $(DOCDIR)/*
 	doxygen
+
+install:
+	cp sqrl $(INSTALLDIR)
 
 clean:
 	rm $(TARGETS) $(OBJFILES)

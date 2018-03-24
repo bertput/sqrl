@@ -1,24 +1,18 @@
 #ifndef URIPARSE_H
 #define URIPARSE_H
 
-#include <uriparser/Uri.h>
+typedef struct uri_struct
+{
+  char *scheme;
+  char *path;
+  char *host;
+  char *query;
+} uri;
+
+uri *uriparse_parse_uri(const char *in_str);
 
 
-UriUriA *uriparse_parse_uri(char *in_str);
-
-char *
-uriparse_get_scheme(UriUriA *uri);
-
-char *
-uriparse_get_path(UriUriA *uri);
-
-char *
-uriparse_get_host(UriUriA *uri);
-
-char *
-uriparse_get_query(UriUriA *uri);
-
-void uriparse_free_uri(UriUriA *uri);
+void uriparse_free_uri(uri *in_uri);
 
 
 

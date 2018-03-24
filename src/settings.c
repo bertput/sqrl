@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <string.h>
 
 #include "settings.h"
 
@@ -11,11 +12,16 @@ settings_new(void)
 {
   settings_keyfile = g_key_file_new();
 
+  GString *sqrl_ini_location_gstr = g_string_new(getenv("HOME"));
+  g_string_append(sqrl_ini_location_gstr, "/.sqrl/sqrl.ini");
+
   gboolean fileOK =
     g_key_file_load_from_file(settings_keyfile,
-                              "sqrl.ini",
+                              sqrl_ini_location_gstr->str,
                               G_KEY_FILE_KEEP_COMMENTS | G_KEY_FILE_KEEP_TRANSLATIONS,
                               NULL);
+
+  g_string_free(sqrl_ini_location_gstr, TRUE);
 
   if (fileOK)
   {
@@ -42,10 +48,15 @@ settings_free(void)
   GError *gerror = NULL;
   gsize chars_written;
 
-  GIOChannel *g_io_channel =
-    g_io_channel_new_file("sqrl.ini", "w", &gerror);
+  GString *sqrl_ini_location_gstr = g_string_new(getenv("HOME"));
+  g_string_append(sqrl_ini_location_gstr, "/.sqrl/sqrl.ini");
 
-  GIOStatus gio_status =
+  GIOChannel *g_io_channel =
+    g_io_channel_new_file(sqrl_ini_location_gstr->str, "w", &gerror);
+
+  g_string_free(sqrl_ini_location_gstr, TRUE);
+
+//  GIOStatus gio_status =
     g_io_channel_write_chars( g_io_channel,
                               file_contents,
                               strlen(file_contents),

@@ -1,4 +1,9 @@
 /*
+ * uriparser code copied from uriparser project,
+ * but modified for this project.
+ *
+ * The original copyright notice is preserved below:
+ *
  * uriparser - RFC 3986 URI parsing library
  *
  * Copyright (C) 2013, Radu Hociung <radu.uriparser@ohmi.org>
@@ -43,18 +48,28 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 
+#include <uriparser/Uri.h>
+
+#include "uriparse.h"
+
 
 #define RANGE(x)  (int)((x).afterLast-(x).first), ((x).first)
 #define LENGTH(x)  (int)((x).afterLast-(x).first)
 
 
-UriUriA *uriparse_parse_uri(char *in_str)
+uri *uriparse_parse_uri(const char *in_str)
 {
+  uri *retval = malloc(sizeof(uri));
+  retval->host = NULL;
+  retval->path = NULL;
+  retval->query = NULL;
+  retval->scheme = NULL;
+
   UriParserStateA state;
-  UriUriA *uri = malloc(sizeof(UriUriA));
+  UriUriA *uri_a = malloc(sizeof(UriUriA));
   char ipstr[INET6_ADDRSTRLEN];
 
-  state.uri = uri;
+  state.uri = uri_a;
   printf ("uri:          %s\n", in_str);
   if (uriParseUriA (&state, in_str) != URI_SUCCESS)
   {
@@ -70,53 +85,74 @@ UriUriA *uriparse_parse_uri(char *in_str)
   }
   else
   {
-    if (uri->scheme.first)
+    if (uri_a->scheme.first)
     {
-      printf ("scheme:       %.*s\n", RANGE (uri->scheme));
+      printf ("scheme:       %.*s\n", RANGE (uri_a->scheme));
+      retval->scheme = malloc(LENGTH(uri_a->scheme) + 1);
+      memset(retval->scheme, 0, LENGTH(uri_a->scheme) + 1);
+      strncpy(retval->scheme, uri_a->scheme.first, LENGTH(uri_a->scheme));
     }
-    if (uri->userInfo.first)
+
+    if (uri_a->userInfo.first)
     {
-      printf ("userInfo:     %.*s\n", RANGE (uri->userInfo));
+      printf ("userInfo:     %.*s\n", RANGE (uri_a->userInfo));
     }
-    if (uri->hostText.first)
+
+    if (uri_a->hostText.first)
     {
-      printf ("hostText:     %.*s\n", RANGE (uri->hostText));
+      printf ("hostText:     %.*s\n", RANGE (uri_a->hostText));
+      retval->host = malloc(LENGTH(uri_a->hostText) + 1);
+      memset(retval->host, 0, LENGTH(uri_a->hostText) + 1);
+      strncpy(retval->host, uri_a->hostText.first, LENGTH(uri_a->hostText));
     }
-    if (uri->hostData.ip4)
+
+    if (uri_a->hostData.ip4)
     {
-      inet_ntop (AF_INET, uri->hostData.ip4->data, ipstr, sizeof ipstr);
+      inet_ntop (AF_INET, uri_a->hostData.ip4->data, ipstr, sizeof ipstr);
       printf ("hostData.ip4: %s\n", ipstr);
     }
-    if (uri->hostData.ip6)
+
+    if (uri_a->hostData.ip6)
     {
-      inet_ntop (AF_INET6, uri->hostData.ip6->data, ipstr, sizeof ipstr);
+      inet_ntop (AF_INET6, uri_a->hostData.ip6->data, ipstr, sizeof ipstr);
       printf ("hostData.ip6: %s\n", ipstr);
     }
-    if (uri->portText.first)
+
+    if (uri_a->portText.first)
     {
-      printf ("portText:     %.*s\n", RANGE (uri->portText));
+      printf ("portText:     %.*s\n", RANGE (uri_a->portText));
     }
-    if (uri->pathHead)
+
+    if (uri_a->pathHead)
     {
-      const UriPathSegmentA *p = uri->pathHead;
+      const UriPathSegmentA *p = uri_a->pathHead;
+      retval->path = malloc(LENGTH(p->text) + 1);
+      memset(retval->path, 0, LENGTH(p->text) + 1);
+      strncpy(retval->path, p->text.first, LENGTH(p->text));
       for (; p; p = p->next)
       {
         printf (" .. pathSeg:  %.*s\n", RANGE (p->text));
       }
     }
-    if (uri->query.first)
+
+    if (uri_a->query.first)
     {
-      printf ("query:        %.*s\n", RANGE (uri->query));
+      printf ("query:        %.*s\n", RANGE (uri_a->query));
+      retval->query = malloc(LENGTH(uri_a->query) + 1);
+      memset(retval->query, 0, LENGTH(uri_a->query) + 1);
+      strncpy(retval->query, uri_a->query.first, LENGTH(uri_a->query));
     }
-    if (uri->fragment.first)
+
+    if (uri_a->fragment.first)
     {
-      printf ("fragment:     %.*s\n", RANGE (uri->fragment));
+      printf ("fragment:     %.*s\n", RANGE (uri_a->fragment));
     }
+
     {
       const char *const absolutePathLabel = "absolutePath: ";
       printf ("%s%s\n", absolutePathLabel,
-              (uri->absolutePath == URI_TRUE) ? "true" : "false");
-      if (uri->hostText.first != NULL)
+              (uri_a->absolutePath == URI_TRUE) ? "true" : "false");
+      if (uri_a->hostText.first != NULL)
       {
         printf ("%*s%s\n", (int) strlen (absolutePathLabel), "",
                 "(always false for URIs with host)");
@@ -124,75 +160,33 @@ UriUriA *uriparse_parse_uri(char *in_str)
     }
   }
 
-  return uri;
-}
-
-char *
-uriparse_get_scheme(UriUriA *uri)
-{
-  char *retval = NULL;
-
-  if (uri->scheme.first)
-  {
-    retval = malloc(LENGTH(uri->scheme) + 1);
-    memset(retval, 0, LENGTH(uri->scheme) + 1);
-    strncpy(retval, uri->scheme.first, LENGTH(uri->scheme));
-  }
+  uriFreeUriMembersA (uri_a);
 
   return retval;
 }
 
-char *
-uriparse_get_path(UriUriA *uri)
+void uriparse_free_uri(uri *in_uri)
 {
-  char *retval = NULL;
-
-  if (uri->pathHead)
+  if (in_uri)
   {
-    const UriPathSegmentA *p = uri->pathHead;
-//    retval = malloc(strlen(RANGE (p->text)) + 1);
-//    strcpy(retval, RANGE (p->text));
+    if (in_uri->scheme)
+    {
+      free(in_uri->scheme);
+    }
+    if (in_uri->path)
+    {
+      free(in_uri->path);
+    }
+    if (in_uri->host)
+    {
+      free(in_uri->host);
+    }
+    if (in_uri->query)
+    {
+      free(in_uri->query);
+    }
 
-    retval = malloc(LENGTH(p->text) + 1);
-    memset(retval, 0, LENGTH(p->text) + 1);
-    strncpy(retval, p->text.first, LENGTH(p->text));
+    free(in_uri);
   }
-
-  return retval;
-}
-
-char *
-uriparse_get_host(UriUriA *uri)
-{
-  char *retval = NULL;
-
-  if (uri->hostText.first)
-  {
-    retval = malloc(LENGTH(uri->hostText) + 1);
-    memset(retval, 0, LENGTH(uri->hostText) + 1);
-    strncpy(retval, uri->hostText.first, LENGTH(uri->hostText));
-  }
-
-  return retval;
-}
-
-char *
-uriparse_get_query(UriUriA *uri)
-{
-  char *retval = NULL;
-
-  if (uri->query.first)
-  {
-    retval = malloc(LENGTH(uri->query) + 1);
-    memset(retval, 0, LENGTH(uri->query) + 1);
-    strncpy(retval, uri->query.first, LENGTH(uri->query));
-  }
-
-  return retval;
-}
-
-void uriparse_free_uri(UriUriA *uri)
-{
-  uriFreeUriMembersA (uri);
 }
 
