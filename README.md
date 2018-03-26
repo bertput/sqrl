@@ -29,8 +29,15 @@ While this version of `SQRL` is originally command line, it will ultimately impl
 ## Running the client
 
 The client needs to be able to get to libsqrl and libsodium libraries at run time.
+
 A quick way to do that is with this command:
 
     export LD_LIBRARY_PATH=/home/bput/projects/libsqrl/build/lib/
     (or wherever your library is)
+
+Another way to do that is to install the `libsqrl` shared library by running `make install` in the libsqrl directory *as root*.
+
+    cd /home/bput/projects/libsqrl/build
+    sudo make install
+
 

@@ -81,8 +81,10 @@ int client_authenticate(char *in_url)
   /*
    * initialize SSL library and register algorithms
    */
-  if(SSL_library_init() < 0)
+  if (SSL_library_init() < 0)
+  {
     log_fatal("Could not initialize the OpenSSL library !\n");
+  }
 
   /*
    * Set SSLv2 client hello, also announce SSLv3 and TLSv1
@@ -163,54 +165,62 @@ int client_authenticate(char *in_url)
 }
 
 
-#define PC(a,b) printf( "%10s: %s\n", (a), (b))
 
 bool client_onAuthenticationRequired(
     Sqrl_Transaction transaction,
     Sqrl_Credential_Type credentialType )
 {
-    char *cred = NULL;
-    uint8_t len;
+  char *cred = NULL;
+  uint8_t len;
 
-    char *sqrl_password = settings_get_sqrl_password();
-    char *sqrl_rescue_code = settings_get_sqrl_rescue_code();
+  char *sqrl_password = settings_get_sqrl_password();
+  char *sqrl_rescue_code = settings_get_sqrl_rescue_code();
 
-    log_info("in client_onAuthenticationRequired\n");
+  log_info("in client_onAuthenticationRequired\n");
 
-    switch( credentialType ) {
-    case SQRL_CREDENTIAL_PASSWORD:
-        PC( "AUTH_REQ", "Password" );
-        cred = malloc( strlen( sqrl_password ) + 1 );
-        strcpy( cred, sqrl_password );
-        break;
-    case SQRL_CREDENTIAL_HINT:
-        PC( "AUTH_REQ", "Hint" );
-        len = sqrl_user_get_hint_length( sqrl_transaction_user( transaction ));
-        cred = malloc( len + 1 );
-        strncpy( cred, sqrl_password, len );
-        break;
-    case SQRL_CREDENTIAL_RESCUE_CODE:
-        PC( "AUTH_REQ", "Rescue Code" );
-        cred = malloc( strlen( sqrl_rescue_code ) + 1 );
-        strcpy( cred, sqrl_rescue_code );
-        break;
+  switch( credentialType )
+  {
+  case SQRL_CREDENTIAL_PASSWORD:
+    log_info("%10s: %s\n", "AUTH_REQ", "Password" );
+    cred = malloc( strlen( sqrl_password ) + 1 );
+    strcpy( cred, sqrl_password );
+    break;
+
+  case SQRL_CREDENTIAL_HINT:
+    log_info("%10s: %s\n", "AUTH_REQ", "Hint" );
+    len = sqrl_user_get_hint_length( sqrl_transaction_user( transaction ));
+    cred = malloc( len + 1 );
+    strncpy( cred, sqrl_password, len );
+    break;
+
+  case SQRL_CREDENTIAL_RESCUE_CODE:
+    log_info("%10s: %s\n", "AUTH_REQ", "Rescue Code" );
+    cred = malloc( strlen( sqrl_rescue_code ) + 1 );
+    strcpy( cred, sqrl_rescue_code );
+    break;
+
 #if 0
-    case SQRL_CREDENTIAL_NEW_PASSWORD:
-        PC( "AUTH_REQ", "New Password" );
-        cred = malloc( strlen( new_password ) + 1 );
-        strcpy( cred, new_password );
-        break;
+  case SQRL_CREDENTIAL_NEW_PASSWORD:
+    log_info("%10s: %s\n", "AUTH_REQ", "New Password" );
+    cred = malloc( strlen( new_password ) + 1 );
+    strcpy( cred, new_password );
+    break;
 #endif // 0
-    default:
-  log_info("OUT client_onAuthenticationRequired with FALSE\n");
-        return false;
-    }
-    sqrl_client_authenticate( transaction, credentialType, cred, strlen( cred ));
-    if( cred ) {
-        free( cred );
-    }
+
+  default:
+    log_info("OUT client_onAuthenticationRequired with FALSE\n");
+    return false;
+  }
+
+  sqrl_client_authenticate( transaction, credentialType, cred, strlen( cred ));
+
+  if( cred )
+  {
+    free( cred );
+  }
+
   log_info("OUT client_onAuthenticationRequired with TRUE\n");
-    return true;
+  return true;
 }
 
 char transactionType[14][10] = {
@@ -229,97 +239,126 @@ char transactionType[14][10] = {
     "GENRATE",
     "CHNG_PSWD"
 };
+
 bool showingProgress = false;
 int nextProgress = 0;
+
 int client_onProgress( Sqrl_Transaction transaction, int p )
 {
 //  log_info("in client_onProgress\n");
 
-    if( !showingProgress ) {
-        // Transaction type
-        showingProgress = true;
-        nextProgress = 2;
-        printf( "%10s: ", transactionType[sqrl_transaction_type(transaction)] );
-    }
-    const char sym[] = "|****";
-    while( p >= nextProgress ) {
-        if( nextProgress != 100 ) {
-            printf( "%c", sym[nextProgress%5] );
-        }
-        nextProgress += 2;
-    }
-    if( p >= 100 ) {
-        printf( "\n" );
-        showingProgress = false;
-    }
-    fflush( stdout );
-    return 1;
+  if( !showingProgress )
+  {
+    // Transaction type
+    showingProgress = true;
+    nextProgress = 2;
+    printf( "%10s: ", transactionType[sqrl_transaction_type(transaction)] );
+  }
 
+  const char sym[] = "|****";
+  while( p >= nextProgress )
+  {
+    if( nextProgress != 100 )
+    {
+      printf( "%c", sym[nextProgress%5] );
+    }
+    nextProgress += 2;
+  }
+
+  if( p >= 100 )
+  {
+    printf( "\n" );
+    showingProgress = false;
+  }
+  fflush( stdout );
+
+  return 1;
 }
 
 void client_onTransactionComplete( Sqrl_Transaction transaction )
 {
   log_info("in client_onTransactionComplete\n");
 
-    Sqrl_Transaction_Type type = sqrl_transaction_type(transaction);
-    Sqrl_Transaction_Status status = sqrl_transaction_status(transaction);
-    Sqrl_User user = sqrl_transaction_user(transaction);
-    PC( transactionType[type], statusText[status] );
-    if( status == SQRL_TRANSACTION_STATUS_SUCCESS ) {
-        switch( type ) {
-        case SQRL_TRANSACTION_IDENTITY_LOAD:
-            if( !t1_user ) {
-                t1_user = sqrl_user_hold( user );
-            } else if( !load_user ) {
-                load_user = sqrl_user_hold( user );
-                sqrl_user_unique_id( load_user, load_uid );
-            } else {
-                PC( "FAIL", "Loaded too many users!" );
-                exit(1);
-            }
-            break;
+  Sqrl_Transaction_Type type = sqrl_transaction_type(transaction);
+  Sqrl_Transaction_Status status = sqrl_transaction_status(transaction);
+  Sqrl_User user = sqrl_transaction_user(transaction);
+
+  log_info("%10s: %s\n", transactionType[type], statusText[status] );
+
+  if( status == SQRL_TRANSACTION_STATUS_SUCCESS )
+  {
+    switch( type )
+    {
+    case SQRL_TRANSACTION_IDENTITY_LOAD:
+      if( !t1_user )
+      {
+        t1_user = sqrl_user_hold( user );
+      }
+      else if( !load_user )
+      {
+        load_user = sqrl_user_hold( user );
+        sqrl_user_unique_id( load_user, load_uid );
+      }
+      else
+      {
+        log_info("%10s: %s\n", "FAIL", "Loaded too many users!" );
+        exit(1);
+      }
+      break;
 #if 0
-        case SQRL_TRANSACTION_IDENTITY_GENERATE:
-            gen_user = sqrl_user_hold( user );
-            char *rc = sqrl_user_get_rescue_code( transaction );
-            if( rc ) {
-                strcpy( gen_rescue_code, rc );
-                PC( "GEN_RC", gen_rescue_code );
-                sqrl_client_export_user( gen_user, NULL, SQRL_EXPORT_ALL, SQRL_ENCODING_BASE64 );
-            } else {
-                printf( "RC not retrieved\n" );
-                exit(1);
-            }
-            break;
-        case SQRL_TRANSACTION_IDENTITY_SAVE:
-            if( !gen_data ) {
-                size_t len = sqrl_transaction_string( transaction, NULL, 0 );
-                if( len ) {
-                    gen_data = malloc( ++len );
-                    sqrl_transaction_string( transaction, gen_data, &len );
-                    sqrl_user_unique_id( gen_user, gen_uid );
-                    PC( "SAVE_UID", gen_uid );
-                    PC( "SAVE_DATA", gen_data );
-                }
-            }
-#endif // 0
-        default:
-            break;
+    case SQRL_TRANSACTION_IDENTITY_GENERATE:
+      gen_user = sqrl_user_hold( user );
+      char *rc = sqrl_user_get_rescue_code( transaction );
+
+      if( rc )
+      {
+        strcpy( gen_rescue_code, rc );
+        log_info("%10s: %s\n", "GEN_RC", gen_rescue_code );
+        sqrl_client_export_user( gen_user, NULL, SQRL_EXPORT_ALL, SQRL_ENCODING_BASE64 );
+      }
+      else
+      {
+        printf( "RC not retrieved\n" );
+        exit(1);
+      }
+      break;
+
+    case SQRL_TRANSACTION_IDENTITY_SAVE:
+      if( !gen_data )
+      {
+        size_t len = sqrl_transaction_string( transaction, NULL, 0 );
+        if( len )
+        {
+          gen_data = malloc( ++len );
+          sqrl_transaction_string( transaction, gen_data, &len );
+          sqrl_user_unique_id( gen_user, gen_uid );
+          log_info("%10s: %s\n", "SAVE_UID", gen_uid );
+          log_info("%10s: %s\n", "SAVE_DATA", gen_data );
         }
+      }
+#endif // 0
+
+    default:
+      break;
     }
+  }
 }
 
 void client_onSaveSuggested( Sqrl_User user )
 {
   log_info("in client_onSaveSuggested\n");
 
-    char buf[44];
-    sqrl_user_unique_id( user, buf );
-    if( strlen( buf ) == 0 ) {
-        PC( "SAVE_SUG", "New Identity" );
-    } else {
-        PC( "SAVE_SUG", buf );
-    }
+  char buf[44];
+  sqrl_user_unique_id( user, buf );
+
+  if( strlen( buf ) == 0 )
+  {
+    log_info("%10s: %s\n", "SAVE_SUG", "New Identity" );
+  }
+  else
+  {
+    log_info("%10s: %s\n", "SAVE_SUG", buf );
+  }
 }
 
 Sqrl_User client_onSelectUser (Sqrl_Transaction transaction)
@@ -363,12 +402,18 @@ void client_onSend(
 
   /* create the socket */
   sockfd = socket(AF_INET, SOCK_STREAM, 0);
-  if (sockfd < 0) error("ERROR opening socket");
+  if (sockfd < 0)
+  {
+    error("ERROR opening socket");
+  }
 
   /* lookup the ip address */
   server = gethostbyname(uri->host);
 
-  if (server == NULL) error("ERROR, no such host");
+  if (server == NULL)
+  {
+    error("ERROR, no such host");
+  }
 
   /* fill in the structure */
   memset(&serv_addr,0,sizeof(serv_addr));
@@ -379,7 +424,7 @@ void client_onSend(
   /* connect the socket */
   if (connect(sockfd,(struct sockaddr *)&serv_addr,sizeof(serv_addr)) < 0)
   {
-      error("ERROR connecting");
+    error("ERROR connecting");
   }
   else
   {
@@ -391,6 +436,7 @@ void client_onSend(
    */
   log_info("Setting FD using ssl object at %p\n", ssl);
   int ssl_set_fs_rc = SSL_set_fd(ssl, sockfd);
+
   if (ssl_set_fs_rc == 1)
   {
     log_info("SSL_set_fd returned %d\n", ssl_set_fs_rc);
@@ -405,8 +451,11 @@ void client_onSend(
    */
   log_info("Connecting using ssl object at %p\n", ssl);
   int ssl_connect_rc =  SSL_connect(ssl);
+
   if ( ssl_connect_rc == 1 )
+  {
     log_info("Successfully enabled SSL/TLS session to: %s.\n", uri->host);
+  }
   else
   {
     log_fatal("Error %d: Could not build a SSL session to: %s.\n", ssl_connect_rc, uri->host);
@@ -428,21 +477,24 @@ void client_onSend(
   char *message = message_gstr->str;
   log_info("    sending message:\n%s\n", message);
   sent = 0;
-  do {
-      log_info("Writing to ssl object at %p\n", ssl);
-      bytes = SSL_write(ssl,message+sent,total-sent);
+  do
+  {
+    log_info("Writing to ssl object at %p\n", ssl);
+    bytes = SSL_write(ssl,message+sent,total-sent);
 
-      if (bytes < 0)
-          error("ERROR writing message to socket");
-      if (bytes == 0)
-      {
-        break;
-      }
-      else
-      {
-        sent+=bytes;
-        log_info("Sent %d bytes, %d of %d\n", bytes, sent, total);
-      }
+    if (bytes < 0)
+    {
+      error("ERROR writing message to socket");
+    }
+    if (bytes == 0)
+    {
+      break;
+    }
+    else
+    {
+      sent+=bytes;
+      log_info("Sent %d bytes, %d of %d\n", bytes, sent, total);
+    }
   } while (sent < total);
 
   log_info("    Receiving response (size unknown)\n");
@@ -452,24 +504,26 @@ void client_onSend(
   /* receive the response */
   memset(response,0,sizeof(response));
   received = 0;
-  do {
-      log_info("Reading from ssl object at %p\n", ssl);
-      received = SSL_read(ssl, response, 1000);
 
-      log_info("   recd %d bytes\n", received);
-      if (received < 0)
-      {
-        error("ERROR reading response from socket");
-      }
-      else if (received > 0)  // we got some data.
-      {
-        // Rely on the zero terminator to find end of the data.
-        //
-        g_string_append(response_gstr, response);
+  do
+  {
+    log_info("Reading from ssl object at %p\n", ssl);
+    received = SSL_read(ssl, response, 1000);
 
-        // Zero out the buffer for the next batch of data.
-        memset(response,0,sizeof(response));
-      }
+    log_info("   recd %d bytes\n", received);
+    if (received < 0)
+    {
+      error("ERROR reading response from socket");
+    }
+    else if (received > 0)  // we got some data.
+    {
+      // Rely on the zero terminator to find end of the data.
+      //
+      g_string_append(response_gstr, response);
+
+      // Zero out the buffer for the next batch of data.
+      memset(response,0,sizeof(response));
+    }
   } while (received > 0); // keep looping as long as there's data to get.
 
 #if 0
