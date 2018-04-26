@@ -30,18 +30,27 @@ HFILES   = \
 	log.h \
 	settings.h \
 	uriparse.h \
+	fifo.h \
+	progresswindow.h \
+	mainwindow.h \
 	client.h
 CPPFILES = \
 	log.c \
 	settings.c \
 	uriparse.c \
+	fifo.c \
+	progresswindow.c \
+	mainwindow.c \
 	client.c \
 	main.c
 OBJFILES = \
 	log.o \
 	settings.o \
 	uriparse.o \
+	fifo.o \
 	client.o \
+	progresswindow.o \
+	mainwindow.o \
 	main.o
 TARGETS  = sqrl
 

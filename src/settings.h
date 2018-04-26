@@ -37,5 +37,23 @@ settings_set_sqrl_rescue_code(gchar *rescue_code);
 gchar *
 settings_get_sqrl_rescue_code(void);
 
+void
+settings_set_main_window_title(gchar *title);
+
+gchar *
+settings_get_main_window_title(void);
+
+void
+settings_set_main_window_width(gint width);
+
+gint
+settings_get_main_window_width(void);
+
+void
+settings_set_main_window_height(gint height);
+
+gint
+settings_get_main_window_height(void);
+
 
 #endif /* _SETTINGS_H_ */

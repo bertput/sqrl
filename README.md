@@ -3,6 +3,11 @@
 This is a native linux SQRL client that implements the SQRL protocol written by Steve Gibson.
 See his [grc.com website](https://www.grc.com/sqrl/sqrl.htm) for more details.
 
+This version enables the GUI -- which is very basic, but is a starting point.
+This version also enables client/server mode by forking the process to run the GUI/server in the case where the GUI process is not already running.
+
+**Note:**  If the GUI exits unexpectedly (Ctrl-C, or similar), it will leave the FIFO at `/tmp/sqrl.FIFO` and prevent a subsequent startup.  Simply remove this file to resume normal operations.  I'll be adding an exit hook soon that will fix this issue. :-)
+
 ## Building the client
 
 This client is written in C and should be buildable on linux with a simple command:
@@ -14,12 +19,12 @@ Before you take these steps, you will need to verify the location of your `libsq
 
 ## Prerequisites
 
-SQRL depends on `libsqrl`, `libsodium`, and `liburiparser`.
+SQRL depends on `GTK-2.0`, `libsqrl`, `libsodium`, and `liburiparser`.
 
 Grab the sources for `libsqrl` from github and build it.
 When you do that, `libsqrl` will retrieve the correct version of `libsodium` as part of the build process and you will then have a nice shiny new `libsqrl` to link to.
 
-You should be able to get `liburiparser` from your linux repos.  You will probably need to get the `-dev` version of the package if it is available on your distro.
+You should be able to get `GTK-2.0` and `liburiparser` from your linux repos.  You will probably need to get the `-dev` version of the package if it is available on your distro.
 
 ## Connecting your browser to SQRL
 

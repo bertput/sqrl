@@ -50,9 +50,6 @@ int log_msg_v(char *format_str, va_list argp)
 	return vprintf(format_str, argp);
 }
 
-/**
- *
- */
 int log_msg(char *format_str, ... )
 {
   int retval;
@@ -153,6 +150,3 @@ int log_fatal(char *format_str, ...)
 
   return retval;
 }
-
-
-/** @} */

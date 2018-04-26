@@ -15,35 +15,22 @@
 #include <openssl/x509.h>
 #include <openssl/x509_vfy.h>
 
-#include <glib.h>
+
+#include <gtk/gtk.h>
 
 #include "client.h"
 #include "log.h"
 #include "settings.h"
-
-#include "sqrl_expert.h"
+#include "progresswindow.h"
 
 #include "uriparse.h"
 
-
-Sqrl_Server *server = NULL;
 
 Sqrl_User t1_user = NULL;
 
 char load_uid[SQRL_UNIQUE_ID_LENGTH + 1];
 Sqrl_User load_user = NULL;
 
-bool client_onAuthenticationRequired(
-    Sqrl_Transaction transaction,
-    Sqrl_Credential_Type credentialType );
-
-int client_onProgress( Sqrl_Transaction transaction, int p );
-
-void client_onTransactionComplete( Sqrl_Transaction transaction );
-
-void client_onSaveSuggested( Sqrl_User user );
-
-Sqrl_User client_onSelectUser (Sqrl_Transaction transaction);
 
 char statusText[4][10] = {
     "SUCCESS",
@@ -55,11 +42,6 @@ char statusText[4][10] = {
 const SSL_METHOD *method;
 SSL_CTX *ctx;
 
-
-void client_onSend(
-    Sqrl_Transaction transaction,
-    const char *url, size_t url_len,
-    const char *payload, size_t payload_len );
 
 
 
@@ -110,44 +92,8 @@ int client_authenticate(char *in_url)
   log_info("Setting options on ctx at %p\n", ctx);
   SSL_CTX_set_options(ctx, SSL_OP_NO_SSLv2);
 
-  settings_new();
-
-  char *sqrl_id_filename = settings_get_sqrl_id_filename();
-
-  log_info("Using identity file at %s with strlen %d\n", sqrl_id_filename, strlen(sqrl_id_filename));
-
-  Sqrl_Client_Callbacks cbs;
-  memset( &cbs, 0, sizeof( Sqrl_Client_Callbacks ));
-//  cbs.onAsk
-  cbs.onAuthenticationRequired = client_onAuthenticationRequired;
-  cbs.onProgress = client_onProgress;
-  cbs.onSaveSuggested = client_onSaveSuggested;
-//  cbs.onSelectAlternateIdentity
-  cbs.onSelectUser = client_onSelectUser;
-  cbs.onSend = client_onSend;
-  cbs.onTransactionComplete = client_onTransactionComplete;
-
-
-
-
-  sqrl_client_set_callbacks( &cbs );
-
-  sqrl_init();
 
   Sqrl_Transaction_Status sqrlTransactionStatus =
-    sqrl_client_begin_transaction(SQRL_TRANSACTION_IDENTITY_LOAD, NULL, sqrl_id_filename, strlen(sqrl_id_filename));
-
-  if (sqrlTransactionStatus == SQRL_TRANSACTION_STATUS_SUCCESS)
-  {
-    log_info("Successfully loaded identity from %s\n", sqrl_id_filename);
-  }
-  else
-  {
-    printf("*** ERROR: failed to load identity from %s\n", sqrl_id_filename);
-    exit(-1);
-  }
-
-  sqrlTransactionStatus =
     sqrl_client_begin_transaction(SQRL_TRANSACTION_AUTH_IDENT, NULL, in_url, strlen(in_url));
 
   if (sqrlTransactionStatus == SQRL_TRANSACTION_STATUS_SUCCESS)
@@ -157,9 +103,8 @@ int client_authenticate(char *in_url)
   else
   {
     printf("*** ERROR: failed to log into %s with status %d (%s)\n", in_url, sqrlTransactionStatus, statusText[sqrlTransactionStatus]);
-    exit(-1);
+    return(-1);
   }
-
 
   return 0;
 }
@@ -242,11 +187,29 @@ char transactionType[14][10] = {
 
 bool showingProgress = false;
 int nextProgress = 0;
+GtkWidget *client_progress_window = NULL;
+
 
 int client_onProgress( Sqrl_Transaction transaction, int p )
 {
-//  log_info("in client_onProgress\n");
 
+  if( !showingProgress )
+  {
+    showingProgress = true;
+
+    StartProgress();
+  }
+  else
+  {
+    UpdateProgress(p, 100);
+
+    if (p == 100)
+    {
+      EndProgress();
+    }
+  }
+
+#if 0
   if( !showingProgress )
   {
     // Transaction type
@@ -271,6 +234,7 @@ int client_onProgress( Sqrl_Transaction transaction, int p )
     showingProgress = false;
   }
   fflush( stdout );
+#endif // 0
 
   return 1;
 }
@@ -384,6 +348,10 @@ void client_onSend(
 
   log_info( "Dest URL: %s\n", url );
   log_info( "Payload : %s\n", payload );
+
+//  UT_string *payload_decode_utstr = sqrl_b64u_decode(NULL, payload, strlen(payload));
+//  log_info( " (Decoded) : %s\n", payload_decode_utstr->d);
+//  utstring_free(payload_decode_utstr);
 
   uri *uri = uriparse_parse_uri(url);
 
@@ -546,7 +514,7 @@ void client_onSend(
   /* process response */
   log_info("Response:\n%s\n",response_gstr->str);
 
-  // TODO: Extract only the body of the response and send it to sqrl_client_receive
+  // Extract only the body of the response and send it to sqrl_client_receive
 
   gchar *response_body = g_strstr_len(response_gstr->str, response_gstr->len, "\r\n\r\n");
 
@@ -559,6 +527,10 @@ void client_onSend(
     GString *response_body_gstr = g_string_new(g_strchug(response_body));
 
     log_info("Response BODY:\n%s\n", response_body_gstr->str);
+//    UT_string *response_decode_utstr = sqrl_b64u_decode(NULL, response_body_gstr->str, response_body_gstr->len);
+//    log_info( " (Decoded) : %s\n", response_decode_utstr->d);
+//    utstring_free(response_decode_utstr);
+
     sqrl_client_receive(transaction, response_body_gstr->str, response_body_gstr->len);
   }
 

@@ -107,3 +107,39 @@ settings_get_sqrl_rescue_code(void)
   return g_key_file_get_string(settings_keyfile, "sqrl", "rescue_code", NULL);
 }
 
+void
+settings_set_main_window_title(gchar *title)
+{
+  g_key_file_set_string(settings_keyfile, "main_window", "title", title);
+}
+
+gchar *
+settings_get_main_window_title(void)
+{
+  return g_key_file_get_string(settings_keyfile, "main_window", "title", NULL);
+}
+
+
+void
+settings_set_main_window_width(gint width)
+{
+  g_key_file_set_integer(settings_keyfile, "main_window", "width", width);
+}
+
+gint
+settings_get_main_window_width(void)
+{
+  return g_key_file_get_integer(settings_keyfile, "main_window", "width", NULL);
+}
+
+void
+settings_set_main_window_height(gint height)
+{
+  g_key_file_set_integer(settings_keyfile, "main_window", "height", height);
+}
+
+gint
+settings_get_main_window_height(void)
+{
+  return g_key_file_get_integer(settings_keyfile, "main_window", "height", NULL);
+}

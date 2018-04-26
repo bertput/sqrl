@@ -32,3 +32,6 @@ int log_error(char *format_str, ...);
 int log_fatal(char *format_str, ...);
 
 #endif /* _LOG_H_ */
+
+
+/** @} */
