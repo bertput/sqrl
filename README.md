@@ -12,16 +12,22 @@ This version also enables client/server mode by forking the process to run the G
 
 SQRL depends on `GTK-2.0`, `libsqrl`, `libsodium`, and `liburiparser`.
 
-Grab the sources for `libsqrl` from github and build it.
-When you do that, `libsqrl` will retrieve the correct version of `libsodium` as part of the build process and you will then have a nice shiny new `libsqrl` to link to.
-If choose to install `libsqrl`, this project will dynamically link to the installed version.
-Alternatively, you can to statically link to `libsqrl` in the next section.
-
 You should be able to get `GTK-2.0` and `liburiparser` from your linux repos.  You will probably need to get the `-dev` version of the package if it is available on your distro.
+
+Build `libsqrl` and `libsodium`:
+
+    git clone https://github.com/Novators/libsqrl.git
+    cd libsqrl
+    mkdir build
+    cd build
+    cmake ..
+    make
+
+You may choose to install libsqrl with the command `sudo make install`, in which case the client will link to the installed dynamic library.  If you'd rather not, you'll have some more options in the next section.
 
 ## Building the client
 
-If you installed libsqrl, skip this step.  If you did not install libsqrl, or want to statically link it, you'll need to set an environment variable:
+If you did not install libsqrl, or want to statically link it, you'll need to set an environment variable.  Otherwise, you can skip this step.
 
     export LIBSQRL=/path/to/your/libsqrl/directory
 
@@ -40,6 +46,8 @@ The client includes a sample SQRL id and a configuration file that must be insta
     PREFIX=/usr/local make install
     # Or, to install only the data files:
     make installdata
+
+The `make install` command will not overwrite existing data files (but will update the binary).
 
 ## Using your own SQRL id
 
