@@ -14,7 +14,6 @@
 #include "uriparse.h"
 #include "mainwindow.h"
 #include "fifo.h"
-#include "tests.h"
 
 
 static gboolean uri_test_flag = FALSE;
