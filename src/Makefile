@@ -7,15 +7,43 @@ CC = gcc
 GTK_CFLAGS = `pkg-config gtk+-2.0 --cflags`
 GTK_LIBS   = `pkg-config gtk+-2.0 --libs`
 
+# Find libsqrl...
+ifneq (,$(LIBSQRL))
+# Passed libsqrl directory as env variable LIBSQRL
+LIBSQRL_CFLAGS = -I $(LIBSQRL)/src/
+LIBSQRL_LIBS   = -lm
+LIBSQRL_STATIC = $(LIBSQRL)/build/lib/libsqrl_static.a $(LIBSQRL)/build/lib/libsodium.a
+$(info Using static libsqrl from: $(LIBSQRL))
+else ifeq (1,$(shell test -f /usr/local/lib/libsqrl.so && echo "1"))
+# Found libsqrl in /usr/local
+LIBSQRL_CFLAGS = -I /usr/local/include
+LIBSQRL_LIBS   = -L /usr/local/lib -l sqrl
+LIBSQRL_STATIC =
+$(info Using dynamic libsqrl from /usr/local)
+else ifeq (1,$(shell test -d ~/projects/libsqrl/src && echo "1"))
+# Try Bert's directory
 LIBSQRL_CFLAGS = -I $(HOME)/projects/libsqrl/src/
-LIBSQRL_LIBS   = -L $(HOME)/projects/libsqrl/build/lib -l sqrl
+LIBSQRL_LIBS   = -lm
+LIBSQRL_STATIC = $(HOME)/projects/libsqrl/build/lib/libsqrl_static.a $(HOME)/projects/libsqrl/build/lib/libsodium.a
+$(info Using static libsqrl from: ~/projects/libsqrl)
+else
+$(error Could not find libsqrl!)
+endif
 
-HOMEDIR = $(HOME)/projects/sqrl
-DOCDIR  = $(HOMEDIR)/doc/generated
-SRCDIR  = $(HOMEDIR)/src
-BINDIR  = $(HOMEDIR)/bin
+BUILDDIR = $(shell pwd)
+DOCDIR   = $(BUILDDIR)/doc/generated
+SRCDIR   = $(BUILDDIR)/src
+BINDIR   = $(BUILDDIR)/bin
 
-INSTALLDIR = $(HOME)/bin
+ifeq (,$(PREFIX))
+PREFIX   = $(HOME)
+endif
+
+INSTALLDIR = $(PREFIX)/bin
+
+DATADIR = $(HOME)/.sqrl
+DATAINI = $(DATADIR)/sqrl.ini
+DATAID  = $(DATADIR)/test.sqrl
 
 # DEBUG     = -ggdb
 CFLAGS    = -c $(GTK_CFLAGS) $(LIBSQRL_CFLAGS) -pthread -Wall $(DEBUG)
@@ -61,6 +89,7 @@ INCLUDES  =
 
 LFLAGS = \
 	$(OBJFILES) \
+	$(LIBSQRL_STATIC) \
 	$(LINKLIBS) \
 	$(SQLITELIB)
 
@@ -86,8 +115,33 @@ doc :
 	rm -rf $(DOCDIR)/*
 	doxygen
 
-install:
-	cp sqrl $(INSTALLDIR)
+installdata :
+	@mkdir -p $(DATADIR)
+ifneq (1,$(shell test -f $(DATAID) && echo "1"))
+	$(info Installing $(DATAID))
+	@cp $(BUILDDIR)/test.sqrl $(DATAID)
+else
+	$(info $(DATAID) already exists.  Skipping.)
+endif
+ifneq (1,$(shell test -f $(DATAINI) && echo "1"))
+	$(info Installing $(DATAINI))
+	@echo "[sqrl]" > $(DATAINI)
+	@echo "id_filename=file://$(DATAID)" >> $(DATAINI)
+	@echo "password=the password" >> $(DATAINI)
+	@echo "rescue_code=948838472048277110863923" >> $(DATAINI)
+else
+	$(info $(DATAINI) already exists.  Skipping.)
+endif
+
+
+install : $(TARGETS) installdata
+	@mkdir -p $(INSTALLDIR)
+ifeq (1,$(shell test -f $(INSTALLDIR)/sqrl && echo "1"))
+	$(info Overwriting $(INSTALLDIR)/sqrl)
+else
+	$(info Installing $(INSTALLDIR)/sqrl)
+endif
+	@cp sqrl $(INSTALLDIR)
 
 clean:
 	rm $(TARGETS) $(OBJFILES)

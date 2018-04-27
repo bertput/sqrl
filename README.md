@@ -8,23 +8,42 @@ This version also enables client/server mode by forking the process to run the G
 
 **Note:**  If the GUI exits unexpectedly (Ctrl-C, or similar), it will leave the FIFO at `/tmp/sqrl.FIFO` and prevent a subsequent startup.  Simply remove this file to resume normal operations.  I'll be adding an exit hook soon that will fix this issue. :-)
 
-## Building the client
-
-This client is written in C and should be buildable on linux with a simple command:
-
-    cd src
-    make
-
-Before you take these steps, you will need to verify the location of your `libsqrl` library after you build it and modify the `Makefile` with the location of your `libsqrl` library.
-
 ## Prerequisites
 
 SQRL depends on `GTK-2.0`, `libsqrl`, `libsodium`, and `liburiparser`.
 
 Grab the sources for `libsqrl` from github and build it.
 When you do that, `libsqrl` will retrieve the correct version of `libsodium` as part of the build process and you will then have a nice shiny new `libsqrl` to link to.
+If choose to install `libsqrl`, this project will dynamically link to the installed version.
+Alternatively, you can to statically link to `libsqrl` in the next section.
 
 You should be able to get `GTK-2.0` and `liburiparser` from your linux repos.  You will probably need to get the `-dev` version of the package if it is available on your distro.
+
+## Building the client
+
+If you installed libsqrl, skip this step.  If you did not install libsqrl, or want to statically link it, you'll need to set an environment variable:
+
+    export LIBSQRL=/path/to/your/libsqrl/directory
+
+
+This client is written in C and should be buildable on linux with a simple command:
+
+    cd src
+    make
+
+
+The client includes a sample SQRL id and a configuration file that must be installed for it to work.  You have a few options here:
+
+    # To install everything to your home directory:
+    make install
+    # Or, to install the binary in /usr/local/bin and data files to your home directory:
+    PREFIX=/usr/local make install
+    # Or, to install only the data files:
+    make installdata
+
+## Using your own SQRL id
+
+You can point the client to a different ID by editing the `~/.sqrl/sqrl.ini` file.
 
 ## Connecting your browser to SQRL
 
@@ -33,16 +52,6 @@ While this version of `SQRL` is originally command line, it will ultimately impl
 
 ## Running the client
 
-The client needs to be able to get to libsqrl and libsodium libraries at run time.
+After setting up your browser (in the previous section), this should be automatic when you click a sqrl:// link.
 
-A quick way to do that is with this command:
-
-    export LD_LIBRARY_PATH=/home/bput/projects/libsqrl/build/lib/
-    (or wherever your library is)
-
-Another way to do that is to install the `libsqrl` shared library by running `make install` in the libsqrl directory *as root*.
-
-    cd /home/bput/projects/libsqrl/build
-    sudo make install
-
-
+You can also run it from the command line: `sqrl sqrl://...`
