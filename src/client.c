@@ -26,10 +26,8 @@
 #include "uriparse.h"
 
 
-Sqrl_User t1_user = NULL;
-
-char load_uid[SQRL_UNIQUE_ID_LENGTH + 1];
-Sqrl_User load_user = NULL;
+// Client currently supports only a single user ID...
+Sqrl_User single_user = NULL;
 
 
 char statusText[4][10] = {
@@ -254,20 +252,12 @@ void client_onTransactionComplete( Sqrl_Transaction transaction )
     switch( type )
     {
     case SQRL_TRANSACTION_IDENTITY_LOAD:
-      if( !t1_user )
-      {
-        t1_user = sqrl_user_hold( user );
-      }
-      else if( !load_user )
-      {
-        load_user = sqrl_user_hold( user );
-        sqrl_user_unique_id( load_user, load_uid );
-      }
-      else
-      {
-        log_info("%10s: %s\n", "FAIL", "Loaded too many users!" );
-        exit(1);
-      }
+		if( single_user != NULL ) {
+			// We already have a user loaded, so release it first.
+			sqrl_user_release( single_user );
+		}
+		// Hold a reference to the newly loaded user.
+		single_user = sqrl_user_hold( user );
       break;
 #if 0
     case SQRL_TRANSACTION_IDENTITY_GENERATE:
@@ -327,8 +317,29 @@ void client_onSaveSuggested( Sqrl_User user )
 
 Sqrl_User client_onSelectUser (Sqrl_Transaction transaction)
 {
-  log_info("in client_onSelectUser\n");
-  return t1_user;
+	log_info("in client_onSelectUser\n");
+	if( single_user == NULL ) {
+		char *sqrl_id_filename = settings_get_sqrl_id_filename();
+		log_info("Using identity file at %s with strlen %d\n", sqrl_id_filename, strlen(sqrl_id_filename));
+
+		Sqrl_Transaction_Status sqrlTransactionStatus =
+			sqrl_client_begin_transaction(
+				SQRL_TRANSACTION_IDENTITY_LOAD, 
+				NULL, 
+				sqrl_id_filename, 
+				strlen(sqrl_id_filename));
+
+		if (sqrlTransactionStatus == SQRL_TRANSACTION_STATUS_SUCCESS)
+		{
+			log_info("Successfully loaded identity from %s\n", sqrl_id_filename);
+		}
+		else
+		{
+			printf("*** ERROR: failed to load identity from %s\n", sqrl_id_filename);
+			exit(-1);
+		}
+	}
+	return single_user;
 }
 
 void client_onSend(

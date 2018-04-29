@@ -90,6 +90,7 @@ int main (int argc, char *argv[])
   if (argc > 0)
   {
     log_msg("Found %d arguments.\n", argc);
+    start_server( argc, argv );
   }
   if (argc > 1)
   {
@@ -176,10 +177,6 @@ void start_server(int argc, char *argv[])
 
   settings_new();
 
-  char *sqrl_id_filename = settings_get_sqrl_id_filename();
-
-  log_info("Using identity file at %s with strlen %d\n", sqrl_id_filename, strlen(sqrl_id_filename));
-
   Sqrl_Client_Callbacks cbs;
   memset( &cbs, 0, sizeof( Sqrl_Client_Callbacks ));
 //  cbs.onAsk
@@ -195,19 +192,6 @@ void start_server(int argc, char *argv[])
 
 
   sqrl_client_set_callbacks( &cbs );
-
-  Sqrl_Transaction_Status sqrlTransactionStatus =
-    sqrl_client_begin_transaction(SQRL_TRANSACTION_IDENTITY_LOAD, NULL, sqrl_id_filename, strlen(sqrl_id_filename));
-
-  if (sqrlTransactionStatus == SQRL_TRANSACTION_STATUS_SUCCESS)
-  {
-    log_info("Successfully loaded identity from %s\n", sqrl_id_filename);
-  }
-  else
-  {
-    printf("*** ERROR: failed to load identity from %s\n", sqrl_id_filename);
-    exit(-1);
-  }
 
   // From this point forward, we need X running.
 
@@ -231,10 +215,8 @@ void start_server(int argc, char *argv[])
   unlink(FIFOfilename);
 
 
-// TODO: Call this when Adam fixes the lockup issue :-)
-//
   log_debug("Calling sqrl_stop()\n");
-//  sqrl_stop();
+  sqrl_stop();
 
   // Have to call exit() here otherwise control is returned to main()!
   //
