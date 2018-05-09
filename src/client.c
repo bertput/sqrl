@@ -201,8 +201,9 @@ int client_onProgress( Sqrl_Transaction transaction, int p )
   {
     UpdateProgress(p, 100);
 
-    if (p == 100)
+    if (p >= 100)
     {
+      showingProgress = false;
       EndProgress();
     }
   }
