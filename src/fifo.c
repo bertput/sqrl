@@ -37,7 +37,7 @@ void fifo_new(void)
 
   log_info("opening the FIFO for read only\n");
 
-  int fifofd = open(FIFOfilename, O_RDONLY | O_NONBLOCK);
+  int fifofd = open(FIFOfilename, O_RDWR | O_NONBLOCK);
 
   if (fifofd < 0)
   {
