@@ -141,6 +141,15 @@ int main (int argc, char *argv[])
   return 0;
 }
 
+/**
+ * If this program is unexpectedly terminated, remove the FIFO.
+ */
+void sigintHandler(int sig_num)
+{
+  unlink(FIFOfilename);
+  log_msg("Deleted FIFO\n");
+  exit(sig_num);
+}
 
 
 /**
@@ -170,6 +179,18 @@ void start_server(int argc, char *argv[])
   }
 
   // If we got to here, we are the original process and can safely start the GUI.
+
+  // Set the SIGINT (Ctrl-C) signal handler to sigintHandler
+  // Refer http://en.cppreference.com/w/c/program/signal
+  //
+  signal(SIGINT, sigintHandler);
+
+  signal(SIGABRT, sigintHandler);
+  signal(SIGHUP, sigintHandler);
+  signal(SIGKILL, sigintHandler);
+  signal(SIGQUIT, sigintHandler);
+
+
 
   log_debug("Calling sqrl_init()\n");
 
