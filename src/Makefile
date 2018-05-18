@@ -60,6 +60,7 @@ HFILES   = \
 	uriparse.h \
 	fifo.h \
 	progresswindow.h \
+	requestwindow.h \
 	mainwindow.h \
 	client.h
 CPPFILES = \
@@ -68,6 +69,7 @@ CPPFILES = \
 	uriparse.c \
 	fifo.c \
 	progresswindow.c \
+	requestwindow.c \
 	mainwindow.c \
 	client.c \
 	main.c
@@ -78,6 +80,7 @@ OBJFILES = \
 	fifo.o \
 	client.o \
 	progresswindow.o \
+	requestwindow.o \
 	mainwindow.o \
 	main.o
 TARGETS  = sqrl

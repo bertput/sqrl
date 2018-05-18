@@ -83,31 +83,6 @@ settings_get_sqrl_id_filename(void)
 
 
 void
-settings_set_sqrl_password(gchar *pwd)
-{
-  g_key_file_set_string(settings_keyfile, "sqrl", "password", pwd);
-}
-
-gchar *
-settings_get_sqrl_password(void)
-{
-  return g_key_file_get_string(settings_keyfile, "sqrl", "password", NULL);
-}
-
-
-void
-settings_set_sqrl_rescue_code(gchar *rescue_code)
-{
-  g_key_file_set_string(settings_keyfile, "sqrl", "rescue_code", rescue_code);
-}
-
-gchar *
-settings_get_sqrl_rescue_code(void)
-{
-  return g_key_file_get_string(settings_keyfile, "sqrl", "rescue_code", NULL);
-}
-
-void
 settings_set_main_window_title(gchar *title)
 {
   g_key_file_set_string(settings_keyfile, "main_window", "title", title);

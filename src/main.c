@@ -14,10 +14,16 @@
 #include "uriparse.h"
 #include "mainwindow.h"
 #include "fifo.h"
+#ifdef ENABLE_TESTS
+#include "tests.h"
+#endif // ENABLE_TESTS
 
 
 static gboolean uri_test_flag = FALSE;
 static char *loglevel_str;
+#ifdef ENABLE_TESTS
+static char *testname_str;
+#endif // ENABLE_TESTS
 
 //static char *PIDfilename = "/tmp/sqrl.PID";
 static char *FIFOfilename = "/tmp/sqrl.FIFO";
@@ -27,6 +33,9 @@ static char *FIFOfilename = "/tmp/sqrl.FIFO";
 static GOptionEntry entries[] =
 {
   { "loglevels", 'l', 0, G_OPTION_ARG_STRING, &loglevel_str, "Sets Logging Level", "NONE" },
+#ifdef ENABLE_TESTS
+  { "test", 't', 0, G_OPTION_ARG_STRING, &testname_str, "Runs named test", "NONE" },
+#endif // ENABLE_TESTS
   { "URItest", 'u', 0, G_OPTION_ARG_NONE, &uri_test_flag, "Test and print URI details", NULL },
   { NULL }
 };
@@ -86,6 +95,14 @@ int main (int argc, char *argv[])
       return -1;
     }
   }
+
+#ifdef ENABLE_TESTS
+  if (testname_str != NULL)
+  {
+    tests_run_named_test(testname_str);
+    return 0;
+  }
+#endif // ENABLE_TESTS
 
   if (argc > 0)
   {

@@ -22,6 +22,7 @@
 #include "log.h"
 #include "settings.h"
 #include "progresswindow.h"
+#include "requestwindow.h"
 
 #include "uriparse.h"
 
@@ -113,11 +114,7 @@ bool client_onAuthenticationRequired(
     Sqrl_Transaction transaction,
     Sqrl_Credential_Type credentialType )
 {
-  char *cred = NULL;
-  uint8_t len;
-
-  char *sqrl_password = settings_get_sqrl_password();
-  char *sqrl_rescue_code = settings_get_sqrl_rescue_code();
+  GString *credential_gstr = g_string_new("");
 
   log_info("in client_onAuthenticationRequired\n");
 
@@ -125,42 +122,35 @@ bool client_onAuthenticationRequired(
   {
   case SQRL_CREDENTIAL_PASSWORD:
     log_info("%10s: %s\n", "AUTH_REQ", "Password" );
-    cred = malloc( strlen( sqrl_password ) + 1 );
-    strcpy( cred, sqrl_password );
+    requestwindow_new("Enter full password", credential_gstr, 1024);
     break;
 
   case SQRL_CREDENTIAL_HINT:
     log_info("%10s: %s\n", "AUTH_REQ", "Hint" );
-    len = sqrl_user_get_hint_length( sqrl_transaction_user( transaction ));
-    cred = malloc( len + 1 );
-    strncpy( cred, sqrl_password, len );
+    int hint_len = sqrl_user_get_hint_length( sqrl_transaction_user( transaction ));
+    requestwindow_new("Enter Hint", credential_gstr, hint_len);
     break;
 
   case SQRL_CREDENTIAL_RESCUE_CODE:
     log_info("%10s: %s\n", "AUTH_REQ", "Rescue Code" );
-    cred = malloc( strlen( sqrl_rescue_code ) + 1 );
-    strcpy( cred, sqrl_rescue_code );
+    requestwindow_new("Enter Rescue Code", credential_gstr, 1024);
     break;
 
-#if 0
   case SQRL_CREDENTIAL_NEW_PASSWORD:
     log_info("%10s: %s\n", "AUTH_REQ", "New Password" );
-    cred = malloc( strlen( new_password ) + 1 );
-    strcpy( cred, new_password );
+    requestwindow_new("Enter NEW password", credential_gstr, 1024);
     break;
-#endif // 0
 
   default:
     log_info("OUT client_onAuthenticationRequired with FALSE\n");
     return false;
   }
 
-  sqrl_client_authenticate( transaction, credentialType, cred, strlen( cred ));
+  log_debug("Got credential %s (%d chars)\n", credential_gstr->str, credential_gstr->len);
 
-  if( cred )
-  {
-    free( cred );
-  }
+  sqrl_client_authenticate( transaction, credentialType, credential_gstr->str, credential_gstr->len);
+
+  g_string_free(credential_gstr, TRUE);
 
   log_info("OUT client_onAuthenticationRequired with TRUE\n");
   return true;
@@ -325,9 +315,9 @@ Sqrl_User client_onSelectUser (Sqrl_Transaction transaction)
 
 		Sqrl_Transaction_Status sqrlTransactionStatus =
 			sqrl_client_begin_transaction(
-				SQRL_TRANSACTION_IDENTITY_LOAD, 
-				NULL, 
-				sqrl_id_filename, 
+				SQRL_TRANSACTION_IDENTITY_LOAD,
+				NULL,
+				sqrl_id_filename,
 				strlen(sqrl_id_filename));
 
 		if (sqrlTransactionStatus == SQRL_TRANSACTION_STATUS_SUCCESS)
